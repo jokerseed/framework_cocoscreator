@@ -1,0 +1,6 @@
+{
+    "config": {
+        "localDataKey": "oops",
+        "localDataIv": "framework"
+    }
+}
