@@ -1,4 +1,27 @@
-import { assetManager } from "cc";
+import { __private, Asset, AssetManager, assetManager, error, js, resources, warn } from "cc";
+
+interface ILoadResArgs<T extends Asset> {
+    /** 资源包名 */
+    bundle?: string;
+    /** 资源文件夹名 */
+    dir?: string;
+    /** 资源路径 */
+    paths: Paths;
+    /** 资源类型 */
+    type: AssetType<T>;
+    /** 资源加载进度 */
+    onProgress: ProgressCallback;
+    /** 资源加载完成 */
+    onComplete: CompleteCallback;
+    /** 是否为预加载 */
+    preload?: boolean;
+}
+
+export type AssetType<T = Asset> = __private.__types_globals__Constructor<T> | null;
+export type Paths = string | string[];
+export type ProgressCallback = ((finished: number, total: number, item: AssetManager.RequestItem) => void) | null;
+export type CompleteCallback = any;
+export type IRemoteOptions = { [k: string]: any; ext?: string; } | null;
 
 export class ResLoader {
     /** 全局默认加载的资源包名 */
@@ -34,5 +57,403 @@ export class ResLoader {
     }
     set retryInterval(value) {
         assetManager.downloader.retryInterval = value;
+    }
+
+    /**
+     * 加载远程资源
+     * @param url           资源地址
+     * @param options       资源参数，例：{ ext: ".png" }
+     * @param onComplete    加载完成回调
+     */
+    loadRemote<T extends Asset>(url: string, options: IRemoteOptions | null, onComplete?: CompleteCallback): void;
+    loadRemote<T extends Asset>(url: string, onComplete?: CompleteCallback): void;
+    loadRemote<T extends Asset>(url: string, ...args: any): void {
+        let options: IRemoteOptions | null = null;
+        let onComplete: CompleteCallback = null;
+        if (args.length == 2) {
+            options = args[0];
+            onComplete = args[1];
+        }
+        else {
+            onComplete = args[0];
+        }
+        assetManager.loadRemote<T>(url, options, onComplete);
+    }
+
+    /**
+     * 获取资源包
+     * @param name 资源包名
+     */
+    getBundle(name: string) {
+        return assetManager.bundles.get(name);
+    }
+
+    /**
+     * 加载资源包
+     * @param name       资源地址
+     */
+    loadBundle(name: string) {
+        return new Promise<AssetManager.Bundle>((resolve, reject) => {
+            assetManager.loadBundle(name, (err, bundle: AssetManager.Bundle) => {
+                if (err) {
+                    return error(err);
+                }
+                resolve(bundle);
+            });
+        });
+    }
+
+    /**
+     * 释放资源包与包中所有资源
+     * @param bundleName 资源地址
+     */
+    removeBundle(bundleName: string) {
+        let bundle = assetManager.bundles.get(bundleName);
+        if (bundle) {
+            bundle.releaseAll();
+            assetManager.removeBundle(bundle);
+        }
+    }
+
+    private parseLoadResArgs<T extends Asset>(
+        paths: Paths,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback,
+        onProgress?: AssetType<T> | ProgressCallback | CompleteCallback,
+        onComplete?: ProgressCallback | CompleteCallback
+    ) {
+        let pathsOut: any = paths;
+        let typeOut: any = type;
+        let onProgressOut: any = onProgress;
+        let onCompleteOut: any = onComplete;
+        if (onComplete === undefined) {
+            const isValidType = js.isChildClassOf(type as AssetType, Asset);
+            if (onProgress) {
+                onCompleteOut = onProgress as CompleteCallback;
+                if (isValidType) {
+                    onProgressOut = null;
+                }
+            }
+            else if (onProgress === undefined && !isValidType) {
+                onCompleteOut = type as CompleteCallback;
+                onProgressOut = null;
+                typeOut = null;
+            }
+            if (onProgress !== undefined && !isValidType) {
+                onProgressOut = type as ProgressCallback;
+                typeOut = null;
+            }
+        }
+        return { paths: pathsOut, type: typeOut, onProgress: onProgressOut, onComplete: onCompleteOut };
+    }
+
+    private async loadByArgs<T extends Asset>(args: ILoadResArgs<T>) {
+        if (args.bundle) {
+            let bundle = assetManager.bundles.get(args.bundle);
+            // 获取缓存中的资源包
+            if (bundle) {
+                this.loadByBundleAndArgs(bundle, args);
+            }
+            // 自动加载资源包
+            else {
+                bundle = await this.loadBundle(args.bundle);
+                if (bundle) this.loadByBundleAndArgs(bundle, args);
+            }
+        }
+        // 默认资源包
+        else {
+            this.loadByBundleAndArgs(resources, args);
+        }
+    }
+
+    private loadByBundleAndArgs<T extends Asset>(bundle: AssetManager.Bundle, args: ILoadResArgs<T>): void {
+        if (args.dir) {
+            if (args.preload) {
+                bundle.preloadDir(args.paths as string, args.type, args.onProgress, args.onComplete);
+            }
+            else {
+                bundle.loadDir(args.paths as string, args.type, args.onProgress, args.onComplete);
+            }
+        }
+        else {
+            if (args.preload) {
+                bundle.preload(args.paths as any, args.type, args.onProgress, args.onComplete);
+            }
+            else {
+                bundle.load(args.paths as any, args.type, args.onProgress, args.onComplete);
+            }
+        }
+    }
+
+    /**
+     * 加载一个资源
+     * @param bundleName    远程包名
+     * @param paths         资源路径
+     * @param type          资源类型
+     * @param onProgress    加载进度回调
+     * @param onComplete    加载完成回调
+     */
+    preload<T extends Asset>(bundleName: string, paths: Paths, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preload<T extends Asset>(bundleName: string, paths: Paths, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preload<T extends Asset>(bundleName: string, paths: Paths, onComplete?: CompleteCallback): void;
+    preload<T extends Asset>(bundleName: string, paths: Paths, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    preload<T extends Asset>(paths: Paths, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preload<T extends Asset>(paths: Paths, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preload<T extends Asset>(paths: Paths, onComplete?: CompleteCallback): void;
+    preload<T extends Asset>(paths: Paths, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    preload<T extends Asset>(
+        bundleName: string,
+        paths?: Paths | AssetType<T> | ProgressCallback | CompleteCallback,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback,
+        onProgress?: ProgressCallback | CompleteCallback,
+        onComplete?: CompleteCallback,
+    ) {
+        let args: ILoadResArgs<Asset> | null = null;
+        if (typeof paths === "string" || paths instanceof Array) {
+            args = this.parseLoadResArgs(paths, type, onProgress, onComplete);
+            args.bundle = bundleName;
+        }
+        else {
+            args = this.parseLoadResArgs(bundleName, paths, type, onProgress);
+            args.bundle = this.defaultBundleName;
+        }
+        args.preload = true;
+        this.loadByArgs(args);
+    }
+
+    /**
+     * 异步加载一个资源
+     * @param bundleName    远程包名
+     * @param paths         资源路径
+     * @param type          资源类型
+     */
+    preloadAsync<T extends Asset>(bundleName: string, paths: Paths, type: AssetType<T>): Promise<AssetManager.RequestItem>;
+    preloadAsync<T extends Asset>(bundleName: string, paths: Paths): Promise<AssetManager.RequestItem>;
+    preloadAsync<T extends Asset>(paths: Paths, type: AssetType<T>): Promise<AssetManager.RequestItem>;
+    preloadAsync<T extends Asset>(paths: Paths): Promise<AssetManager.RequestItem>;
+    preloadAsync<T extends Asset>(bundleName: string,
+        paths?: Paths | AssetType<T> | ProgressCallback | CompleteCallback,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback): Promise<AssetManager.RequestItem> {
+        return new Promise((resolve, reject) => {
+            this.preload(bundleName, paths, type, (err: Error | null, data: AssetManager.RequestItem) => {
+                if (err) {
+                    warn(err.message);
+                }
+                resolve(data);
+            });
+        });
+    }
+
+    /**
+     * 预加载文件夹中的资源
+     * @param bundleName    远程包名
+     * @param dir           文件夹名
+     * @param type          资源类型
+     * @param onProgress    加载进度回调
+     * @param onComplete    加载完成回调
+     */
+    preloadDir<T extends Asset>(bundleName: string, dir: string, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preloadDir<T extends Asset>(bundleName: string, dir: string, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preloadDir<T extends Asset>(bundleName: string, dir: string, onComplete?: CompleteCallback): void;
+    preloadDir<T extends Asset>(bundleName: string, dir: string, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    preloadDir<T extends Asset>(dir: string, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preloadDir<T extends Asset>(dir: string, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    preloadDir<T extends Asset>(dir: string, onComplete?: CompleteCallback): void;
+    preloadDir<T extends Asset>(dir: string, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    preloadDir<T extends Asset>(
+        bundleName: string,
+        dir?: string | AssetType<T> | ProgressCallback | CompleteCallback,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback,
+        onProgress?: ProgressCallback | CompleteCallback,
+        onComplete?: CompleteCallback,
+    ) {
+        let args: ILoadResArgs<T> | null = null;
+        if (typeof dir === "string") {
+            args = this.parseLoadResArgs(dir, type, onProgress, onComplete);
+            args.bundle = bundleName;
+        }
+        else {
+            args = this.parseLoadResArgs(bundleName, dir, type, onProgress);
+            args.bundle = this.defaultBundleName;
+        }
+        args.dir = args.paths as string;
+        args.preload = true;
+        this.loadByArgs(args);
+    }
+
+    /**
+    * 加载一个资源
+    * @param bundleName    远程包名
+    * @param paths         资源路径
+    * @param type          资源类型
+    * @param onProgress    加载进度回调
+    * @param onComplete    加载完成回调
+    */
+    load<T extends Asset>(bundleName: string, paths: Paths, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    load<T extends Asset>(bundleName: string, paths: Paths, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    load<T extends Asset>(bundleName: string, paths: Paths, onComplete?: CompleteCallback): void;
+    load<T extends Asset>(bundleName: string, paths: Paths, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    load<T extends Asset>(paths: Paths, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    load<T extends Asset>(paths: Paths, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    load<T extends Asset>(paths: Paths, onComplete?: CompleteCallback): void;
+    load<T extends Asset>(paths: Paths, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    load<T extends Asset>(
+        bundleName: string,
+        paths?: Paths | AssetType<T> | ProgressCallback | CompleteCallback,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback,
+        onProgress?: ProgressCallback | CompleteCallback,
+        onComplete?: CompleteCallback,
+    ) {
+        let args: ILoadResArgs<T> | null = null;
+        if (typeof paths === "string" || paths instanceof Array) {
+            args = this.parseLoadResArgs(paths, type, onProgress, onComplete);
+            args.bundle = bundleName;
+        }
+        else {
+            args = this.parseLoadResArgs(bundleName, paths, type, onProgress);
+            args.bundle = this.defaultBundleName;
+        }
+        this.loadByArgs(args);
+    }
+
+    /**
+     * 异步加载一个资源
+     * @param bundleName    远程包名
+     * @param paths         资源路径
+     * @param type          资源类型
+     */
+    loadAsync<T extends Asset>(bundleName: string, paths: Paths, type: AssetType<T>): Promise<T>;
+    loadAsync<T extends Asset>(bundleName: string, paths: Paths): Promise<T>;
+    loadAsync<T extends Asset>(paths: Paths, type: AssetType<T>): Promise<T>;
+    loadAsync<T extends Asset>(paths: Paths): Promise<T>;
+    loadAsync<T extends Asset>(bundleName: string,
+        paths?: Paths | AssetType<T> | ProgressCallback | CompleteCallback,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.load(bundleName, paths, type, (err: Error | null, asset: T) => {
+                if (err) {
+                    warn(err.message);
+                }
+                resolve(asset);
+            });
+        });
+    }
+
+    /**
+     * 加载文件夹中的资源
+     * @param bundleName    远程包名
+     * @param dir           文件夹名
+     * @param type          资源类型
+     * @param onProgress    加载进度回调
+     * @param onComplete    加载完成回调
+     */
+    loadDir<T extends Asset>(bundleName: string, dir: string, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    loadDir<T extends Asset>(bundleName: string, dir: string, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    loadDir<T extends Asset>(bundleName: string, dir: string, onComplete?: CompleteCallback): void;
+    loadDir<T extends Asset>(bundleName: string, dir: string, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    loadDir<T extends Asset>(dir: string, type: AssetType<T>, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    loadDir<T extends Asset>(dir: string, onProgress: ProgressCallback, onComplete: CompleteCallback): void;
+    loadDir<T extends Asset>(dir: string, onComplete?: CompleteCallback): void;
+    loadDir<T extends Asset>(dir: string, type: AssetType<T>, onComplete?: CompleteCallback): void;
+    loadDir<T extends Asset>(
+        bundleName: string,
+        dir?: string | AssetType<T> | ProgressCallback | CompleteCallback,
+        type?: AssetType<T> | ProgressCallback | CompleteCallback,
+        onProgress?: ProgressCallback | CompleteCallback,
+        onComplete?: CompleteCallback,
+    ) {
+        let args: ILoadResArgs<T> | null = null;
+        if (typeof dir === "string") {
+            args = this.parseLoadResArgs(dir, type, onProgress, onComplete);
+            args.bundle = bundleName;
+        }
+        else {
+            args = this.parseLoadResArgs(bundleName, dir, type, onProgress);
+            args.bundle = this.defaultBundleName;
+        }
+        args.dir = args.paths as string;
+        this.loadByArgs(args);
+    }
+
+    /** 释放预制依赖资源 */
+    private releasePrefabtDepsRecursively(bundleName: string, uuid: string | Asset) {
+        if (uuid instanceof Asset) {
+            uuid.decRef();
+        }
+        else {
+            const asset = assetManager.assets.get(uuid);
+            if (asset) {
+                asset.decRef();
+            }
+        }
+    }
+
+    /**
+     * 通过资源相对路径释放资源
+     * @param path          资源路径
+     * @param bundleName    远程资源包名
+     */
+    release(path: string, bundleName?: string) {
+        if (bundleName == undefined) bundleName = this.defaultBundleName;
+
+        const bundle = assetManager.getBundle(bundleName);
+        if (bundle) {
+            const asset = bundle.get(path);
+            if (asset) {
+                this.releasePrefabtDepsRecursively(bundleName, asset);
+            }
+        }
+    }
+
+    /**
+     * 通过相对文件夹路径删除所有文件夹中资源
+     * @param path          资源文件夹路径
+     * @param bundleName    远程资源包名
+     */
+    releaseDir(path: string, bundleName: string = this.defaultBundleName) {
+        const bundle: AssetManager.Bundle | null = assetManager.getBundle(bundleName);
+        if (bundle) {
+            var infos = bundle.getDirWithPath(path);
+            if (infos) {
+                infos.map((info) => {
+                    this.releasePrefabtDepsRecursively(bundleName, info.uuid);
+                });
+            }
+
+            if (path == "" && bundleName != "resources") {
+                assetManager.removeBundle(bundle);
+            }
+        }
+    }
+
+    /**
+     * 获取资源路径
+     * @param bundleName 资源包名
+     * @param uuid       资源唯一编号
+     * @returns 
+     */
+    getAssetPath(bundleName: string, uuid: string): string {
+        let b = this.getBundle(bundleName)!;
+        let info = b.getAssetInfo(uuid)!;
+        //@ts-ignore
+        return info.path;
+    }
+
+    /**
+     * 获取资源
+     * @param path          资源路径
+     * @param type          资源类型
+     * @param bundleName    远程资源包名
+     */
+    get<T extends Asset>(path: string, type?: AssetType<T>, bundleName: string = this.defaultBundleName): T | null {
+        var bundle: AssetManager.Bundle = assetManager.getBundle(bundleName)!;
+        return bundle ? bundle.get(path, type) : null;
+    }
+
+    /** 打印缓存中所有资源信息 */
+    dump() {
+        assetManager.assets.forEach((value: Asset, key: string) => {
+            console.log(`引用数量:${value.refCount}`, assetManager.assets.get(key));
+        })
+        console.log(`当前资源总数:${assetManager.assets.count}`);
     }
 }

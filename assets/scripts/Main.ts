@@ -6,6 +6,8 @@ import { ConfigGame } from './extension/framework/core/config/ConfigGame';
 import { ConfigManager } from './extension/framework/core/config/ConfigManager';
 import { StorageManager } from "./extension/framework/core/storage/StorageManager";
 import { StorageSecuritySimple } from './extension/framework/core/storage/StorageSecuritySimple';
+import { ResLoader } from './extension/framework/core/loader/ResLoader';
+import { AudioManager } from './extension/framework/core/audio/AudioManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Main')
@@ -40,6 +42,9 @@ export class Main extends Component {
         // Web平台查询参数管理
         Framework.config = new ConfigManager();
         Framework.config.query = new ConfigWebUrl();
+
+        // 资源管理模块
+        Framework.res = new ResLoader();
     }
 
     private loadConfig() {
@@ -56,6 +61,12 @@ export class Main extends Component {
             // 本地存储模块
             Framework.storage = new StorageManager();
             Framework.storage.init(new StorageSecuritySimple());
+
+            // 创建音频模块
+            Framework.audio = this.persist.addComponent(AudioManager);
+
+            // 设置默认资源包
+            Framework.res.defaultBundleName = Framework.config.game.bundleDefault;
         })
     }
 

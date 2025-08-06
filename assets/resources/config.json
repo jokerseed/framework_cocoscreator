@@ -2,5 +2,13 @@
     "config": {
         "localDataKey": "oops",
         "localDataIv": "framework"
+    },
+    "bundle": {
+        "enable": false,
+        "server": "http://localhost",
+        "default": "bundle",
+        "packages": {
+            "bundle": "ea6b9"
+        }
     }
 }

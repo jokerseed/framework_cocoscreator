@@ -20,4 +20,21 @@ export class ConfigGame {
     get localDataIv(): string {
         return this._data.config.localDataIv;
     }
+
+    /** 是否启用远程资源 */
+    get bundleEnable(): string {
+        return this._data.bundle.enable;
+    }
+    /** 远程资源服务器地址 */
+    get bundleServer(): string {
+        return this._data.bundle.server;
+    }
+    /** 远程资源名 */
+    get bundleDefault(): string {
+        return this._data.bundle.default;
+    }
+    /** 远程所有资源包配置 */
+    get bundlePackages(): string {
+        return this._data.bundle.packages;
+    }
 }
