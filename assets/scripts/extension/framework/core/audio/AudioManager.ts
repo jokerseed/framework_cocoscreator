@@ -16,10 +16,7 @@ export class AudioManager extends Component {
 
     /** 本地加载音乐音效的音量、开关配置数据并设置到游戏中 */
     load() {
-        let node = new Node();
-        node.name = "AudioMusic";
-        this.node.addChild(node);
-        this.music = node.getComponent(AudioMusic) || node.addComponent(AudioMusic)!;
+        this.music = this.getComponent(AudioMusic) || this.addComponent(AudioMusic)!;
 
         this.local_data = Framework.storage.getJson(LOCAL_STORE_KEY);
         if (this.local_data) {

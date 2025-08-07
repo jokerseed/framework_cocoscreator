@@ -1,4 +1,4 @@
-import { _decorator, Component, director, JsonAsset, Node, profiler, resources } from 'cc';
+import { _decorator, Component, director, game, JsonAsset, Node, profiler, resources } from 'cc';
 import { DEBUG } from 'cc/env';
 import { Framework } from './extension/framework/Framework';
 import { ConfigWebUrl } from './extension/framework/core/config/ConfigWebUrl';
@@ -8,6 +8,8 @@ import { StorageManager } from "./extension/framework/core/storage/StorageManage
 import { StorageSecuritySimple } from './extension/framework/core/storage/StorageSecuritySimple';
 import { ResLoader } from './extension/framework/core/loader/ResLoader';
 import { AudioManager } from './extension/framework/core/audio/AudioManager';
+import { TimerManager } from './extension/framework/core/timer/TimerManager';
+import { MessageManager } from './extension/framework/core/event/MessageManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Main')
@@ -45,6 +47,12 @@ export class Main extends Component {
 
         // 资源管理模块
         Framework.res = new ResLoader();
+
+        // 全局消息
+        Framework.message = new MessageManager();
+
+        // 创建时间模块
+        Framework.timer = this.persist.addComponent(TimerManager)!;
     }
 
     private loadConfig() {
@@ -63,11 +71,14 @@ export class Main extends Component {
             Framework.storage.init(new StorageSecuritySimple());
 
             // 创建音频模块
-            Framework.audio = this.persist.addComponent(AudioManager);
+            Framework.audio = this.persist.addComponent(AudioManager)!;
             Framework.audio.load();
 
             // 设置默认资源包
             Framework.res.defaultBundleName = Framework.config.game.bundleDefault;
+
+            // 初始化每秒传输帧数
+            game.frameRate = Framework.config.game.frameRate;
         })
     }
 

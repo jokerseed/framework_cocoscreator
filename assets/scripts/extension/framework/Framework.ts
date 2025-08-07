@@ -3,6 +3,8 @@ import { ConfigManager } from "./core/config/ConfigManager";
 import { StorageManager } from "./core/storage/StorageManager";
 import { ResLoader } from "./core/loader/ResLoader";
 import { AudioManager } from "./core/audio/AudioManager";
+import { TimerManager } from "./core/timer/TimerManager";
+import { MessageManager } from "./core/event/MessageManager";
 
 export class Framework {
     /** 游戏配置 */
@@ -13,6 +15,10 @@ export class Framework {
     static res: ResLoader;
     /** 游戏音乐管理 */
     static audio: AudioManager;
+    /** 游戏时间管理 */
+    static timer: TimerManager;
+    /** 全局消息 */
+    static message: MessageManager;
 }
 
 // 引入oops全局变量以方便调试

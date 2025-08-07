@@ -1,7 +1,8 @@
 {
     "config": {
         "localDataKey": "oops",
-        "localDataIv": "framework"
+        "localDataIv": "framework",
+        "frameRate": "60"
     },
     "bundle": {
         "enable": false,

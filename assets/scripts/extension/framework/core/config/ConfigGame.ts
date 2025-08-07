@@ -37,4 +37,9 @@ export class ConfigGame {
     get bundlePackages(): string {
         return this._data.bundle.packages;
     }
+
+    /** 游戏每秒传输帧数 */
+    get frameRate(): number {
+        return this._data.config.frameRate;
+    }
 }
