@@ -64,6 +64,7 @@ export class Main extends Component {
 
             // 创建音频模块
             Framework.audio = this.persist.addComponent(AudioManager);
+            Framework.audio.load();
 
             // 设置默认资源包
             Framework.res.defaultBundleName = Framework.config.game.bundleDefault;
