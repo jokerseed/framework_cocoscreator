@@ -42,4 +42,14 @@ export class ConfigGame {
     get frameRate(): number {
         return this._data.config.frameRate;
     }
+
+    /** 是否开启移动设备安全区域适配 */
+    get mobileSafeArea(): boolean {
+        return this._data.config.mobileSafeArea || false;
+    }
+
+    /** ui基础层级配置 */
+    get gui(): any {
+        return this._data.gui;
+    }
 }

@@ -5,6 +5,7 @@ import { ResLoader } from "./core/loader/ResLoader";
 import { AudioManager } from "./core/audio/AudioManager";
 import { TimerManager } from "./core/timer/TimerManager";
 import { MessageManager } from "./core/event/MessageManager";
+import { UIManager } from "./core/gui/UIManager";
 
 export class Framework {
     /** 游戏配置 */
@@ -19,6 +20,8 @@ export class Framework {
     static timer: TimerManager;
     /** 全局消息 */
     static message: MessageManager;
+    /** 二维界面管理 */
+    static gui: UIManager;
 }
 
 // 引入oops全局变量以方便调试

@@ -10,6 +10,7 @@ import { ResLoader } from './extension/framework/core/loader/ResLoader';
 import { AudioManager } from './extension/framework/core/audio/AudioManager';
 import { TimerManager } from './extension/framework/core/timer/TimerManager';
 import { MessageManager } from './extension/framework/core/event/MessageManager';
+import { UIManager } from './extension/framework/core/gui/UIManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Main')
@@ -53,6 +54,9 @@ export class Main extends Component {
 
         // 创建时间模块
         Framework.timer = this.persist.addComponent(TimerManager)!;
+
+        // 创建游戏界面管理对象
+        Framework.gui = new UIManager();
     }
 
     private loadConfig() {
@@ -76,6 +80,11 @@ export class Main extends Component {
 
             // 设置默认资源包
             Framework.res.defaultBundleName = Framework.config.game.bundleDefault;
+
+            // 游戏界面管理
+            Framework.gui.mobileSafeArea = Framework.config.game.mobileSafeArea;
+            //@ts-ignore
+            Framework.gui.initLayer(this.gui, Framework.config.game.gui);
 
             // 初始化每秒传输帧数
             game.frameRate = Framework.config.game.frameRate;

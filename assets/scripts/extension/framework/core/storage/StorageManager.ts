@@ -1,4 +1,4 @@
-import { sys } from "cc";
+import { error, sys, warn } from "cc";
 import { PREVIEW } from "cc/env";
 
 export interface IStorageSecurity {
@@ -38,7 +38,7 @@ export class StorageManager {
         let keywords = this.getKey(key);
 
         if (null == key) {
-            console.error("存储的key不能为空");
+            error("存储的key不能为空");
             return;
         }
         if (this.encrypted) {
@@ -46,12 +46,12 @@ export class StorageManager {
             keywords = this.iss.encryptKey(keywords);
         }
         if (null == value) {
-            console.warn("存储的值为空，则直接移除该存储");
+            warn("存储的值为空，则直接移除该存储");
             this.remove(key);
             return;
         }
         if (typeof value === 'function') {
-            console.error("储存的值不能为方法");
+            error("储存的值不能为方法");
             return;
         }
         if (typeof value === 'object') {
@@ -59,7 +59,7 @@ export class StorageManager {
                 value = JSON.stringify(value);
             }
             catch (e) {
-                console.error(`解析失败，str = ${value}`);
+                error(`解析失败，str = ${value}`);
                 return;
             }
         }
@@ -84,7 +84,7 @@ export class StorageManager {
      */
     get(key: string, defaultValue: any = ""): string {
         if (null == key) {
-            console.error("存储的key不能为空");
+            error("存储的key不能为空");
             return null!;
         }
 
@@ -133,7 +133,7 @@ export class StorageManager {
      */
     remove(key: string) {
         if (null == key) {
-            console.error("存储的key不能为空");
+            error("存储的key不能为空");
             return;
         }
 

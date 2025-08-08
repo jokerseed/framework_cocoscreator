@@ -2,8 +2,39 @@
     "config": {
         "localDataKey": "oops",
         "localDataIv": "framework",
-        "frameRate": "60"
+        "frameRate": "60",
+        "mobileSafeArea": true
     },
+    "gui": [
+        {
+            "name": "LayerGame",
+            "type": "Node"
+        },
+        {
+            "name": "LayerUI",
+            "type": "UI"
+        },
+        {
+            "name": "LayerPopUp",
+            "type": "PopUp"
+        },
+        {
+            "name": "LayerDialog",
+            "type": "Dialog"
+        },
+        {
+            "name": "LayerSystem",
+            "type": "Dialog"
+        },
+        {
+            "name": "LayerNotify",
+            "type": "Notify"
+        },
+        {
+            "name": "LayerGuide",
+            "type": "Node"
+        }
+    ],
     "bundle": {
         "enable": false,
         "server": "http://localhost",

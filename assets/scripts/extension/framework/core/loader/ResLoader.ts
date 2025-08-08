@@ -1,4 +1,4 @@
-import { __private, Asset, AssetManager, assetManager, error, js, resources, warn } from "cc";
+import { __private, Asset, AssetManager, assetManager, error, js, log, resources, warn } from "cc";
 
 interface ILoadResArgs<T extends Asset> {
     /** 资源包名 */
@@ -452,8 +452,8 @@ export class ResLoader {
     /** 打印缓存中所有资源信息 */
     dump() {
         assetManager.assets.forEach((value: Asset, key: string) => {
-            console.log(`引用数量:${value.refCount}`, assetManager.assets.get(key));
+            log(`引用数量:${value.refCount}`, assetManager.assets.get(key));
         })
-        console.log(`当前资源总数:${assetManager.assets.count}`);
+        log(`当前资源总数:${assetManager.assets.count}`);
     }
 }
