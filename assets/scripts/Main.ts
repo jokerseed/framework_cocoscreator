@@ -33,6 +33,8 @@ export class Main extends Component {
     private persist: Node = null!;
 
     protected onLoad(): void {
+        this.enabled = false;
+
         this.initModule();
         this.loadConfig();
     }
@@ -88,6 +90,10 @@ export class Main extends Component {
 
             // 初始化每秒传输帧数
             game.frameRate = Framework.config.game.frameRate;
+
+            this.enabled = true;
+
+            resources.release(config_name);
         })
     }
 
