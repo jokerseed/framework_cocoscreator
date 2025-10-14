@@ -18,9 +18,9 @@ export enum LayerType {
     Game = "LayerGame",
     /** 主界面层 */
     UI = "LayerUI",
-    /** 弹窗层 */
+    /** 弹窗层 不中断进程的弹窗*/
     PopUp = "LayerPopUp",
-    /** 模式窗口层 */
+    /** 模式窗口层 会中断进程等待用户操作*/
     Dialog = "LayerDialog",
     /** 系统触发模式窗口层 */
     System = "LayerSystem",
