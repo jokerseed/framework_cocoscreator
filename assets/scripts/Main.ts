@@ -46,6 +46,7 @@ export class Main extends Component {
 
         // Web平台查询参数管理
         Framework.config = new ConfigManager();
+        //创建的时候会自动初始化weburl透传的参数
         Framework.config.query = new ConfigWebUrl();
 
         // 资源管理模块
@@ -62,6 +63,7 @@ export class Main extends Component {
     }
 
     private loadConfig() {
+        //加载初始化配置文件
         const config_name = "config";
         resources.load(config_name, JsonAsset, (err, config) => {
             if (err) {
